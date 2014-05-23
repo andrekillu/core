@@ -131,16 +131,17 @@ describe('OCA.Files.BreadCrumb tests', function() {
 		});
 	});
 	describe('Resizing', function() {
-		var bc, widthStub, dummyDir,
+		var bc, dummyDir,
 			oldUpdateTotalWidth;
 
 		beforeEach(function() {
-			dummyDir = '/short name/longer name/looooooooooooonger/even longer long long long longer long/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/last one';
+			dummyDir = '/short name/longer name/looooooooooooonger/' +
+				'even longer long long long longer long/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/last one';
 
 			oldUpdateTotalWidth = BreadCrumb.prototype._updateTotalWidth;
 			BreadCrumb.prototype._updateTotalWidth = function() {
 				// need to set display:block for correct offsetWidth (no CSS loaded here)
-				$('div.crumb').css({
+				this.$el.find('div.crumb').css({
 					'display': 'block',
 					'float': 'left'
 				});
@@ -149,30 +150,20 @@ describe('OCA.Files.BreadCrumb tests', function() {
 			};
 
 			bc = new BreadCrumb();
-			widthStub = sinon.stub($.fn, 'width');
 			// append dummy navigation and controls
 			// as they are currently used for measurements
 			$('#testArea').append(
-				'<div id="navigation" style="width: 80px"></div>',
 				'<div id="controls"></div>'
 			);
-
-			// make sure we know the test screen width
-			$('#testArea').css('width', 1280);
-
-			// use test area as we need it for measurements
-			$('#controls').append(bc.$el);
-			$('#controls').append('<div class="actions"><div>Dummy action with a given width</div></div>');
 		});
 		afterEach(function() {
 			BreadCrumb.prototype._updateTotalWidth = oldUpdateTotalWidth;
-			widthStub.restore();
 			bc = null;
 		});
-		it('Hides breadcrumbs to fit window', function() {
+		it('Hides breadcrumbs to fit max width', function() {
 			var $crumbs;
 
-			widthStub.returns(500);
+			bc.setMaxWidth(500);
 			// triggers resize implicitly
 			bc.setDirectory(dummyDir);
 			$crumbs = bc.$el.find('.crumb');
@@ -194,14 +185,12 @@ describe('OCA.Files.BreadCrumb tests', function() {
 		it('Updates ellipsis on window size increase', function() {
 			var $crumbs;
 
-			widthStub.returns(500);
 			// triggers resize implicitly
 			bc.setDirectory(dummyDir);
 			$crumbs = bc.$el.find('.crumb');
 
 			// simulate increase
-			$('#testArea').css('width', 1800);
-			bc.resize(1800);
+			bc.setMaxWidth(1800);
 
 			// first one is always visible
 			expect($crumbs.eq(0).hasClass('hidden')).toEqual(false);
@@ -221,15 +210,13 @@ describe('OCA.Files.BreadCrumb tests', function() {
 		it('Updates ellipsis on window size decrease', function() {
 			var $crumbs;
 
-			$('#testArea').css('width', 2000);
-			widthStub.returns(2000);
+			bc.setMaxWidth(2000);
 			// triggers resize implicitly
 			bc.setDirectory(dummyDir);
 			$crumbs = bc.$el.find('.crumb');
 
 			// simulate decrease
-			bc.resize(500);
-			$('#testArea').css('width', 500);
+			bc.setMaxWidth(500);
 
 			// first one is always visible
 			expect($crumbs.eq(0).hasClass('hidden')).toEqual(false);
